@@ -24,22 +24,25 @@ loginForm.addEventListener("submit", async (e) => {
   }
 
   try {
-    const response = await fetch("/api/login", {
+    const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
 
-    if (!response.ok) {
-      const { message } = await response.json().catch(() => ({}));
-      return showError(message || "Invalid email or password");
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      return showError(result.message || "Invalid email or password");
     }
 
-    const { data } = await response.json();
-    localStorage.setItem("currentUserId", data.userId);
-    window.location.href = "/leaderboard?refresh=true";
+    // Store auth data
+    localStorage.setItem("token", result.token);
+    localStorage.setItem("currentUserId", result.user.id);
+    localStorage.setItem("currentUser", JSON.stringify(result.user));
+    window.location.href = "/account";
   } catch (err) {
     console.error("Login error:", err);
-    showError("Error: " + err.message);
+    showError("Unable to connect to server");
   }
 });

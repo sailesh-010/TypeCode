@@ -4,32 +4,47 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem('token');
   const userId = localStorage.getItem('currentUserId');
 
-  if (!userId) {
+  if (!token || !userId) {
     displayGuestView();
     return;
   }
 
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+
   try {
     showLoadingState();
-    
-    // Fetch user and score data in parallel
-    const [userResponse, scoreResponse] = await Promise.all([
-      fetch(`/api/users/${userId}`),
-      fetch(`/api/score/${userId}`)
+
+    // Fetch profile and stats in parallel using authenticated endpoints
+    const [profileRes, statsRes] = await Promise.all([
+      fetch('/api/auth/profile', { headers: authHeaders }),
+      fetch('/api/user/stats', { headers: authHeaders })
     ]);
 
-    const user = await userResponse.json();
-    const scoreData = await scoreResponse.json();
+    const profileData = await profileRes.json();
+    const statsData = await statsRes.json();
 
-    if (user.success && scoreData.success) {
-      displayUserProfile(user.data);
-      displayUserStats(scoreData.data);
-      hideLoadingState();
+    if (profileData.success) {
+      displayUserProfile(profileData.user);
     } else {
-      displayError('Failed to load user data');
+      // Token may be expired — clear auth and show guest view
+      localStorage.removeItem('token');
+      localStorage.removeItem('currentUserId');
+      localStorage.removeItem('currentUser');
+      displayGuestView();
+      return;
     }
+
+    if (statsData.success) {
+      displayUserStats(statsData.stats);
+    }
+
+    hideLoadingState();
   } catch (error) {
     console.error("Error fetching user data:", error);
     displayError('Error loading profile. Please refresh the page.');
@@ -60,51 +75,31 @@ function displayGuestView() {
  * Display user profile information
  */
 function displayUserProfile(user) {
-  document.getElementById("userName").textContent = user.name;
-  document.getElementById("userEmail").textContent = user.email;
-  document.getElementById("userTitle").textContent = "Developer";
+  const displayName = user.fullName || user.username || 'User';
+  document.getElementById("userName").textContent = displayName;
+  document.getElementById("userEmail").textContent = user.email || '';
+  document.getElementById("userTitle").textContent = user.role === 'admin' ? 'Admin' : 'Developer';
   document.getElementById("userJoined").textContent = 
     "Joined " + new Date(user.createdAt || Date.now()).toLocaleDateString("en-US", 
     { month: "short", year: "numeric" });
   document.getElementById("userAvatar").src = 
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`;
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName)}`;
 }
 
 /**
  * Display user statistics
  */
-function displayUserStats(scoreData) {
-  // Overall stats
-  document.getElementById("totalWpm").textContent = scoreData.Wpm || 0;
-  document.getElementById("totalAcc").textContent = (scoreData.accuracy || 0) + "%";
-  document.getElementById("totalTests").textContent = scoreData.totalTests || 0;
-  
-  // Convert milliseconds to hours:minutes format
-  const totalMs = scoreData.totalTime || 0;
-  const hours = Math.floor(totalMs / 3600000);
-  const minutes = Math.floor((totalMs % 3600000) / 60000);
-  document.getElementById("totalTime").textContent = `${hours}h ${minutes}m`;
+function displayUserStats(stats) {
+  // Overall stats  (backend returns: averageWPM, averageAccuracy, totalTests, bestWPM, totalWordsTyped, totalErrors)
+  document.getElementById("totalWpm").textContent = stats.averageWPM || 0;
+  document.getElementById("totalAcc").textContent = (stats.averageAccuracy || 0) + "%";
+  document.getElementById("totalTests").textContent = stats.totalTests || 0;
 
-  // Language-specific stats
-  const languages = {
-    'python': 'py',
-    'javascript': 'js',
-    'java': 'java',
-    'c': 'c',
-    'cpp': 'cpp'
-  };
-
-  Object.entries(languages).forEach(([fullName, shortName]) => {
-    const langStats = scoreData.languages?.[fullName] || {};
-    
-    const wpmElem = document.getElementById(`${shortName}Wpm`);
-    const accElem = document.getElementById(`${shortName}Acc`);
-    const testsElem = document.getElementById(`${shortName}Tests`);
-    
-    if (wpmElem) wpmElem.textContent = langStats.wpm || 0;
-    if (accElem) accElem.textContent = langStats.accuracy || 0;
-    if (testsElem) testsElem.textContent = langStats.tests || 0;
-  });
+  // Estimate time from totalTests * average duration (no totalTime field in backend yet)
+  const estimatedMinutes = (stats.totalTests || 0) * 1; // ~1 min per test
+  const hours = Math.floor(estimatedMinutes / 60);
+  const minutes = estimatedMinutes % 60;
+  document.getElementById("totalTime").textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
 /**
@@ -143,6 +138,8 @@ function displayError(message) {
  * Logout user
  */
 function logout() {
+  localStorage.removeItem('token');
   localStorage.removeItem('currentUserId');
-  window.location.href = "/";
+  localStorage.removeItem('currentUser');
+  window.location.href = "/login";
 }

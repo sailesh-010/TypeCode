@@ -65,13 +65,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const response = await apiPost("/api/user", { name, email, password }); 
-      // Backend returns: { success: true, data: { user: {...}, score: {...} } }
-      const userId = response.data?.user?.userId;
-      if (!userId) throw new Error("Invalid server response");
+      const response = await apiPost("/api/auth/register", {
+        fullName: name,
+        username: name.replace(/\s+/g, '_').toLowerCase(),
+        email,
+        password
+      });
 
-      localStorage.setItem("currentUserId", userId);
-      window.location.href = "/leaderboard?refresh=true";
+      // Auto-login after successful registration
+      const loginRes = await apiPost("/api/auth/login", { email, password });
+
+      localStorage.setItem("token", loginRes.token);
+      localStorage.setItem("currentUserId", loginRes.user.id);
+      localStorage.setItem("currentUser", JSON.stringify(loginRes.user));
+      window.location.href = "/account";
     } catch (err) {
       showError(err.message || "Unable to connect to server");
       console.error("Signup error:", err);
