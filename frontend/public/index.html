@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeCode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="asset/css/keyboard.css">
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #020617;
+        color: #e2e8f0;
+      }
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body
+    class="selection:bg-teal-500/30 overflow-x-hidden min-h-screen relative"
+  >
+    <div
+      class="fixed inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] -z-20 opacity-10 pointer-events-none"
+    ></div>
+
+    <nav
+      id="navbar"
+      class="fixed w-full h-16 z-50 transition-all duration-300 bg-slate-950/80 backdrop-blur-sm border-b border-slate-800">
+
+      <div class="flex w-full justify-between items-center max-w-7xl mx-auto px-6 h-full">
+        <div class="flex items-center gap-2 text-teal-400 font-bold text-xl tracking-tighter cursor-pointer hover:opacity-80 transition-opacity" onclick="refresh()">
+          <i data-lucide="terminal" width="24" height="24"></i>
+          <span>Type<span class="text-white">Code</span></span>
+        </div>
+
+        <ul class="hidden md:flex items-center gap-8">
+          <li>
+            <a href="/practice"
+              id="btn-practice"
+              class="text-sm font-medium uppercase tracking-wide relative group transition-colors text-slate-400 hover:text-teal-300"
+            >
+              Practice
+              <span
+                id="indicator-practice"
+                class="absolute -bottom-1 left-0 h-0.5 bg-teal-400 transition-all w-0 group-hover:w-full"
+              ></span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/leaderboard"
+              class="text-sm font-medium uppercase tracking-wide relative group transition-colors text-slate-400 hover:text-teal-300"
+            >
+              Leaderboard
+              <span
+                class="absolute -bottom-1 left-0 h-0.5 bg-teal-400 transition-all w-0 group-hover:w-full"
+              ></span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/about"
+              class="text-sm font-medium uppercase tracking-wide relative group transition-colors text-slate-400 hover:text-teal-300"
+            >
+              About
+              <span
+                class="absolute -bottom-1 left-0 h-0.5 bg-teal-400 transition-all w-0 group-hover:w-full"
+              ></span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="hidden md:flex items-center gap-3">
+          <a href="/login" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-medium transition-colors">
+            Log in
+          </a>
+          <a href="/signup" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 text-sm font-semibold rounded-lg transition-colors">
+            Sign up
+          </a>
+          <div class="w-px h-6 bg-slate-800 mx-1"></div>
+          <a href="/settings">
+            <button class="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-full">
+              <i data-lucide="settings" width="20" height="20"></i>
+            </button>
+          </a>
+          <a href="/account">
+            <button class="text-teal-400 hover:text-teal-300 transition-colors p-2 hover:bg-slate-800/50 rounded-full border border-transparent hover:border-slate-700">
+              <i data-lucide="user" width="20" height="20"></i>
+            </button>
+          </a>
+        </div>
+
+        <button class="md:hidden text-slate-300">
+          <i data-lucide="menu" width="28" height="28"></i>
+        </button>
+      </div>
+    </nav>
+
+    <main class="relative pb-24">
+      <section class="pt-32 px-6 text-center max-w-3xl mx-auto mb-8">
+        <h1
+          class="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight"
+        >
+          <span class="text-teal-400">Master</span> your stack.
+        </h1>
+        <p class="text-slate-400 text-lg">
+          Real code snippets. Real syntax. No random words.
+        </p>
+      </section>
+
+      <div class="w-full max-w-5xl mx-auto mt-24 px-4 relative group">
+        <div
+          id="control-bar"
+          class="overflow-hidden transition-all duration-500 ease-in-out max-h-0 opacity-0 mb-0"
+        >
+          <div
+            class="flex flex-wrap items-center justify-between gap-4 text-sm font-mono text-slate-400 bg-slate-900/80 p-3 rounded-lg border border-slate-800/50 backdrop-blur-sm shadow-xl"
+          >
+            <div
+              class="flex items-center gap-2 overflow-x-auto no-scrollbar"
+              id="lang-buttons"
+            ></div>
+
+            <div
+              class="flex items-center gap-2 pl-4 border-l border-slate-800"
+              id="diff-buttons"
+            ></div>
+          </div>
+        </div>
+
+        <div
+          id="editor-container"
+          class="bg-slate-900 rounded-xl border border-slate-800 shadow-2xl overflow-hidden relative min-h-[400px] transition-all duration-500 -translate-y-6"
+        >
+          <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-teal-500/10 blur-[100px] rounded-full pointer-events-none"
+          ></div>
+
+          <div
+            class="bg-slate-950/50 p-3 flex items-center justify-between border-b border-slate-800"
+          >
+            <div
+              class="flex gap-2 opacity-50 hover:opacity-100 transition-opacity"
+            >
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <div
+              class="text-xs text-slate-500 font-mono flex items-center gap-2"
+            >
+              <i data-lucide="file-code" width="12" height="12"></i>
+              <span id="filename-display">main.js</span>
+            </div>
+            <div class="w-10"></div>
+          </div>
+
+          <div class="p-8 md:p-12 overflow-hidden relative">
+            <pre
+              id="code-display"
+              class="font-mono text-lg md:text-xl leading-relaxed whitespace-pre-wrap outline-none"
+              style="font-family: 'JetBrains Mono', 'Fira Code', monospace"
+            ></pre>
+
+            <div
+              id="init-overlay"
+              class="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[1px] z-20 pointer-events-none"
+            >
+              <div
+                class="text-slate-500 text-sm flex flex-col items-center gap-2 animate-pulse"
+              >
+                <i data-lucide="keyboard" width="32" height="32"></i>
+                <span>Initializing Environment...</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="absolute bottom-0 w-full bg-slate-950/50 border-t border-slate-800 px-6 py-2 flex justify-between items-center text-xs font-mono text-slate-500"
+          >
+            <div class="flex gap-4">
+              <span class="flex items-center gap-1"
+                ><i
+                  data-lucide="zap"
+                  width="12"
+                  height="12"
+                  class="text-yellow-500"
+                ></i>
+                Speed Mode</span
+              >
+              <span class="flex items-center gap-1"
+                ><i
+                  data-lucide="activity"
+                  width="12"
+                  height="12"
+                  class="text-teal-500"
+                ></i>
+                Live Stats</span
+              >
+            </div>
+            <div>WPM: <span class="text-slate-300 font-bold">--</span></div>
+          </div>
+        </div>
+
+        <div class="mt-12 flex justify-center opacity-100">
+          <!--keybaord-->
+          <div
+            class="w-full max-w-3xl h-48 border border-slate-700 rounded-lg flex items-center justify-center"
+          >
+            <div id="keyboard-container" class="relative bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-gray-700 scale-90 md:scale-100 transition-transform">
+            <img id="left-hand" src="images/left-resting-hand.png" alt="Left Hand" class="hand" style="transform: translate(50px, 80px);">
+            <img id="right-hand" src="images/right-resting-hand.png" alt="Right Hand" class="hand" style="transform: translate(500px, 80px);">
+            <div id="keyboard" class="grid gap-1.5" style="grid-template-rows: repeat(5, minmax(0, 1fr));"></div>
+        </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="max-w-7xl mx-auto px-6 mt-32">
+        <div
+          class="flex flex-col md:flex-row justify-between items-end mb-12 gap-4"
+        >
+          <div>
+            <h2 class="text-3xl font-bold text-white mb-2">
+              Designed for Developers
+            </h2>
+            <p class="text-slate-400 max-w-md">
+              Tools that help you type cleaner code, faster.
+            </p>
+          </div>
+          
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+          <div
+            class="bg-slate-900 p-6 rounded-xl border border-slate-800 hover:border-teal-500/30 hover:bg-slate-800 transition-all group"
+          >
+            <div
+              class="w-12 h-12 bg-slate-950 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-slate-800 group-hover:border-teal-500/20"
+            >
+              <i
+                data-lucide="code"
+                width="24"
+                height="24"
+                class="text-teal-400"
+              ></i>
+            </div>
+            <h3
+              class="text-slate-200 font-bold text-lg mb-2 group-hover:text-teal-50 transition-colors"
+            >
+              Real-World Snippets
+            </h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Practice with actual functions from React, Django, Spring Boot,
+              and more.
+            </p>
+          </div>
+
+          <div
+            class="bg-slate-900 p-6 rounded-xl border border-slate-800 hover:border-teal-500/30 hover:bg-slate-800 transition-all group"
+          >
+            <div
+              class="w-12 h-12 bg-slate-950 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-slate-800 group-hover:border-teal-500/20"
+            >
+              <i
+                data-lucide="cpu"
+                width="24"
+                height="24"
+                class="text-teal-400"
+              ></i>
+            </div>
+            <h3
+              class="text-slate-200 font-bold text-lg mb-2 group-hover:text-teal-50 transition-colors"
+            >
+              Intelligent Syntax
+            </h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              The engine enforces proper indentation and bracket closing habits.
+            </p>
+          </div>
+
+          <div
+            class="bg-slate-900 p-6 rounded-xl border border-slate-800 hover:border-teal-500/30 hover:bg-slate-800 transition-all group"
+          >
+            <div
+              class="w-12 h-12 bg-slate-950 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-slate-800 group-hover:border-teal-500/20"
+            >
+              <i
+                data-lucide="check-circle"
+                width="24"
+                height="24"
+                class="text-teal-400"
+              ></i>
+            </div>
+            <h3
+              class="text-slate-200 font-bold text-lg mb-2 group-hover:text-teal-50 transition-colors"
+            >
+              Error Analysis
+            </h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Identify which special characters (like {} or ;) are slowing you
+              down.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-slate-900 bg-slate-950 pt-16 pb-12">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div class="col-span-2 md:col-span-1">
+            <div
+              class="flex items-center gap-2 text-teal-400 font-bold text-xl tracking-tighter mb-4"
+            >
+              <i data-lucide="terminal" width="24" height="24"></i>
+              <span>Type<span class="text-white">Code</span></span>
+            </div>
+            <p class="text-slate-500 text-sm leading-relaxed mb-6">
+              The open-source typing platform designed to help developers
+              improve their speed and accuracy.
+            </p>
+            <div class="flex gap-4">
+              <a
+                href="#"
+                class="text-slate-500 hover:text-white transition-colors"
+                ><i data-lucide="github" width="20" height="20"></i
+              ></a>
+              <a
+                href="#"
+                class="text-slate-500 hover:text-white transition-colors"
+                ><i data-lucide="twitter" width="20" height="20"></i
+              ></a>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Platform</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Speed Test</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Multiplayer</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Leaderboard</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Resources</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Touch Typing Guide</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >API Docs</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Changelog</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Legal</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Privacy Policy</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Terms of Service</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Cookie Settings</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div
+          class="border-t border-slate-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <p class="text-slate-600 text-xs">
+            © 2025 TypeCode Inc. All rights reserved.
+          </p>
+          <div class="flex gap-2 items-center text-xs text-slate-600">
+            <span class="w-2 h-2 rounded-full bg-teal-500/50"></span>
+            System Operational
+          </div>
+        </div>
+      </div>
+    </footer>
+    <script>
+      lucide.createIcons();
+    </script>
+    <script src="asset/js/nav.js"></script>
+    <script src="asset/js/script.js"></script>
+    <script src="asset/js/keyboard.js"></script>
+
+  </body>
+</html>

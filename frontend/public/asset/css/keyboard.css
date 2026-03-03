@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap');
+
+.key {
+    font-family: 'Fira Code', monospace;
+    transition: all 0.1s ease;
+    box-shadow: 0 4px 0 #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.key.pressed {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #374151;
+    background-color: #60a5fa;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.hand {
+    position: absolute;
+    width: 280px;
+    height: auto;
+    pointer-events: none;
+    z-index: 50;
+    transition: transform 0.15s cubic-bezier(0.2, 0, 0.4, 1);
+    filter: drop-shadow(0 15px 15px rgba(0,0,0,0.5));
+    transform-origin: 50% 90%;
+    will-change: transform;
+}
+
+.hand.active {
+    z-index: 100;
+}
+
+#left-hand.pressing {
+    transform: translate(50px, 90px) scale(0.95) !important;
+}
+
+#right-hand.pressing {
+    transform: translate(500px, 90px) scale(0.95) !important;
+}

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeCode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #020617;
+        color: #e2e8f0;
+      }
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body
+    class="selection:bg-teal-500/30 overflow-x-hidden min-h-screen relative"
+  >
+    <div
+      class="fixed inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] -z-20 opacity-10 pointer-events-none"
+    ></div>
+
+    <nav
+      id="navbar"
+      class="fixed w-full h-16 z-50 transition-all duration-300 bg-slate-950/80 backdrop-blur-sm border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+        <div class="flex items-center gap-2 text-teal-400 font-bold text-xl tracking-tighter cursor-pointer hover:opacity-80 transition-opacity" onclick="refresh()">
+          <i data-lucide="terminal" width="24" height="24"></i>
+          <span>Type<span class="text-white">Code</span></span>
+        </div>
+
+        <div class="hidden md:flex items-center gap-4 text-center">
+          <a href="/login" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-medium transition-colors">
+            Log in
+          </a>
+          <a href="/signup" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 text-sm font-semibold rounded-lg transition-colors">
+            Sign up
+          </a>
+          </div>
+          
+
+        <button class="md:hidden text-slate-300">
+          <i data-lucide="menu" width="28" height="28"></i>
+        </button>
+      </div>
+    </nav>
+
+    <main class="min-h-screen flex items-center justify-center px-6 py-24">
+      <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Create Account</h1>
+          <p class="text-slate-400">Join TypeCode and start improving</p>
+        </div>
+
+        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-8">
+          <form id="signupForm" class="space-y-5">
+            <div>
+              <label class="block text-sm text-slate-400 mb-2">Name</label>
+              <input type="text" id="name" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-white border border-slate-700 outline-none focus:border-teal-500 transition-colors" placeholder="Enter your name" required>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-400 mb-2">Email</label>
+              <input type="email" id="email" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-white border border-slate-700 outline-none focus:border-teal-500 transition-colors" placeholder="Enter your email" required>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-400 mb-2">Password</label>
+              <input type="password" id="password" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-white border border-slate-700 outline-none focus:border-teal-500 transition-colors" placeholder="Create a password" required>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-400 mb-2">Confirm Password</label>
+              <input type="password" id="confirmPassword" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-white border border-slate-700 outline-none focus:border-teal-500 transition-colors" placeholder="Confirm your password" required>
+            </div>
+
+            <p id="errorMsg" class="text-red-500 text-sm hidden"></p>
+
+            <button type="submit" class="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+              Sign Up
+            </button>
+          </form>
+
+          <p class="text-center text-slate-500 text-sm mt-6">
+            Already have an account? <a href="/login" class="text-teal-400 hover:text-teal-300">Log in</a>
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <script src="/asset/js/nav.js"></script>
+    <script src="/asset/js/signup.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+
+    <footer class="border-t border-slate-900 bg-slate-950 pt-16 pb-12">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div class="col-span-2 md:col-span-1">
+            <div
+              class="flex items-center gap-2 text-teal-400 font-bold text-xl tracking-tighter mb-4"
+            >
+              <i data-lucide="terminal" width="24" height="24"></i>
+              <span>Type<span class="text-white">Code</span></span>
+            </div>
+            <p class="text-slate-500 text-sm leading-relaxed mb-6">
+              The open-source typing platform designed to help developers
+              improve their speed and accuracy.
+            </p>
+            <div class="flex gap-4">
+              <a
+                href="#"
+                class="text-slate-500 hover:text-white transition-colors"
+                ><i data-lucide="github" width="20" height="20"></i
+              ></a>
+              <a
+                href="#"
+                class="text-slate-500 hover:text-white transition-colors"
+                ><i data-lucide="twitter" width="20" height="20"></i
+              ></a>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Platform</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Speed Test</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Multiplayer</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Leaderboard</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Resources</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Touch Typing Guide</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >API Docs</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Changelog</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Legal</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Privacy Policy</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Terms of Service</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Cookie Settings</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div
+          class="border-t border-slate-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <p class="text-slate-600 text-xs">
+            © 2025 TypeCode Inc. All rights reserved.
+          </p>
+          <div class="flex gap-2 items-center text-xs text-slate-600">
+            <span class="w-2 h-2 rounded-full bg-teal-500/50"></span>
+            System Operational
+          </div>
+        </div>
+      </div>
+    </footer>
+    <script>
+      lucide.createIcons();
+    </script>
+    <script src="asset/js/signup.js"></script>
+    <script src="asset/js/nav.js"></script>
+</body>
+</html>

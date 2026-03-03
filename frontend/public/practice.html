@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeCode - Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="asset/css/keyboard.css">
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #020617;
+        color: #e2e8f0;
+      }
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      #difficulty-subset {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: all 0.5s ease-out;
+      }
+      #playground-section {
+        display: none;
+        opacity: 0;
+      }
+
+      /* 1. Language Selected -> Reveal Difficulty with slide-down animation */
+      body:has(input[name="language"]:checked) #difficulty-subset {
+        max-height: 1000px;
+        opacity: 1;
+        margin-top: 2rem;
+      }
+
+      /* 2. Game Mode - controlled by JS adding .game-mode class to body */
+      body.game-mode #setup-phase {
+        display: none;
+      }
+
+      body.game-mode footer {
+        display: none;
+      }
+
+      body.game-mode #playground-section {
+        display: flex;
+        animation: zoomIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      @keyframes zoomIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="selection:bg-teal-500/30 overflow-x-hidden min-h-screen relative flex flex-col"
+  >
+    <div
+      class="fixed inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] -z-20 opacity-10 pointer-events-none"
+    ></div>
+
+    <nav
+      id="navbar"
+      class="fixed w-full h-16 z-50 transition-all duration-300 bg-transparent">
+
+      <div class="flex w-full justify-between items-center max-w-7xl mx-auto px-6 h-full" onclick="change()">
+        <div class="flex items-center gap-2 text-teal-400 font-bold text-xl tracking-tighter cursor-pointer hover:opacity-80 transition-opacity" onclick="refresh()">
+          <i data-lucide="terminal" width="24" height="24"></i>
+          <span>Type<span class="text-white">Code</span></span>
+        </div>
+
+        <ul class="hidden md:flex items-center gap-8">
+          <li>
+            <a href="/practice"
+              id="btn-practice"
+              class="text-sm font-medium uppercase tracking-wide relative group transition-colors text-slate-400 hover:text-teal-300"
+            >
+              Practice
+              <span
+                id="indicator-practice"
+                class="absolute -bottom-1 left-0 h-0.5 bg-teal-400 transition-all w-0 group-hover:w-full"
+              ></span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/leaderboard"
+              class="text-sm font-medium uppercase tracking-wide relative group transition-colors text-slate-400 hover:text-teal-300"
+            >
+              Leaderboard
+              <span
+                class="absolute -bottom-1 left-0 h-0.5 bg-teal-400 transition-all w-0 group-hover:w-full"
+              ></span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/about"
+              class="text-sm font-medium uppercase tracking-wide relative group transition-colors text-slate-400 hover:text-teal-300"
+            >
+              About
+              <span
+                class="absolute -bottom-1 left-0 h-0.5 bg-teal-400 transition-all w-0 group-hover:w-full"
+              ></span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="hidden md:flex items-center gap-3">
+          <a href="/login" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-medium transition-colors">
+            Log in
+          </a>
+          <a href="/signup" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 text-sm font-semibold rounded-lg transition-colors">
+            Sign up
+          </a>
+          <div class="w-px h-6 bg-slate-800 mx-1"></div>
+          <a href="/settings">
+            <button class="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-full">
+              <i data-lucide="settings" width="20" height="20"></i>
+            </button>
+          </a>
+          <a href="/account">
+            <button class="text-teal-400 hover:text-teal-300 transition-colors p-2 hover:bg-slate-800/50 rounded-full border border-transparent hover:border-slate-700">
+              <i data-lucide="user" width="20" height="20"></i>
+            </button>
+          </a>
+        </div>
+
+        <button class="md:hidden text-slate-300">
+          <i data-lucide="menu" width="28" height="28"></i>
+        </button>
+      </div>
+    </nav>
+
+
+    <main
+      class="relative flex-grow flex items-center justify-center pt-20 px-6"
+    >
+
+      <div
+        id="setup-phase"
+        class="w-full max-w-2xl mx-auto space-y-8 transition-all duration-500"
+      >
+
+        <div class="text-center space-y-4 mb-12">
+          <h1
+            class="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-cyan-500"
+          >
+            Setup Run
+          </h1>
+          <p class="text-slate-400">
+            Select your stack to initialize the environment.
+          </p>
+        </div>
+
+
+        <section class="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+          <h2 class="text-lg font-semibold mb-6 text-slate-200 flex items-center gap-3">
+            <i data-lucide="code-2" class="w-5 h-5 text-teal-500"></i>
+            Select Language
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+            <div class="relative">
+              <input
+                type="radio"
+                name="language"
+                id="lang-py"
+                class="peer sr-only"
+                value="python"
+              />
+              <label
+                for="lang-py"
+                class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+              >
+                Python
+              </label>
+            </div>
+
+            <div class="relative">
+              <input
+                type="radio"
+                name="language"
+                id="lang-c"
+                class="peer sr-only"
+                value="C"
+              />
+              <label
+                for="lang-c"
+                class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+              >
+                C
+              </label>
+            </div>
+            <!-- Java -->
+            <div class="relative">
+              <input
+                type="radio"
+                name="language"
+                id="lang-java"
+                class="peer sr-only"
+                value="Java"
+              />
+              <label
+                for="lang-java"
+                class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+              >
+                Java
+              </label>
+            </div>
+            <!-- JS -->
+            <div class="relative">
+              <input
+                type="radio"
+                name="language"
+                id="lang-js"
+                class="peer sr-only"
+                Value="JavaScript"
+              />
+              <label
+                for="lang-js"
+                class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+              >
+                JavaScript
+              </label>
+            </div>
+            <!-- C++ -->
+            <div class="relative">
+              <input
+                type="radio"
+                name="language"
+                id="lang-cpp"
+                class="peer sr-only"
+                value="CPP"
+              />
+              <label
+                for="lang-cpp"
+                class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+              >
+                C++
+              </label>
+            </div>
+          </div>
+          
+        </section>
+        <!-- Difficulty -->
+        <div id="difficulty-subset">
+          <section
+            class="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl"
+          >
+            <h2
+              class="text-lg font-semibold mb-6 text-slate-200 flex items-center gap-3"
+            >
+              <i data-lucide="bar-chart-3" class="w-5 h-5 text-teal-500"></i>
+              Select Difficulty
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <!-- Random -->
+              <div class="relative">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  id="diff-random"
+                  class="peer sr-only"
+                  value="random"
+                />
+                <label
+                  for="diff-random"
+                  class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+                >
+                  Random
+                </label>
+              </div>
+              <!-- Easy -->
+              <div class="relative">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  id="diff-easy"
+                  class="peer sr-only"
+                  value="Easy"
+                />
+                <label
+                  for="diff-easy"
+                  class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+                >
+                  Easy
+                </label>
+              </div>
+              <!-- Medium -->
+              <div class="relative">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  id="diff-medium"
+                  class="peer sr-only"
+                  value="Medium"
+                />
+                <label
+                  for="diff-medium"
+                  class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+                >
+                  Medium
+                </label>
+              </div>
+              <!-- Hard -->
+              <div class="relative">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  id="diff-hard"
+                  class="peer sr-only"
+                  value="Hard"
+                />
+                <label
+                  for="diff-hard"
+                  class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300 peer-checked:shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+                >
+                  Hard
+                </label>
+              </div>
+            </div>
+          </section>
+          <section class="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl mt-8">
+            <h2 class="text-lg font-semibold mb-6 text-slate-200 flex items-center gap-3">
+              <i data-lucide="message-square" class="w-5 h-5 text-teal-500"></i>
+              Topic
+            </h2>
+            <div class="flex items-center gap-4 mb-4">
+              <div class="relative">
+                <input type="radio" name="topic-type" id="topic-random" class="peer sr-only" value="random" checked />
+                <label for="topic-random" class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300">
+                  Random
+                </label>
+              </div>
+              <div class="relative">
+                <input type="radio" name="topic-type" id="topic-custom" class="peer sr-only" value="custom" />
+                <label for="topic-custom" class="cursor-pointer flex items-center justify-center px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm font-medium text-slate-400 transition-all hover:text-teal-300 hover:border-teal-500/50 peer-checked:bg-teal-500/10 peer-checked:border-teal-500 peer-checked:text-teal-300">
+                  Custom
+                </label>
+              </div>
+            </div>
+            <input type="text" id="topic" class="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-950/50 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Enter your topic..." disabled>
+          </section>
+
+          <button id="start-btn" class="w-full mt-8 px-6 py-4 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg hover:shadow-teal-500/20 flex items-center justify-center gap-2">
+            <i data-lucide="play" class="w-5 h-5"></i>
+            Start Practice
+          </button>
+        </div>
+      </div>
+
+      <!-- PLAYGROUND PHASE -->
+      <section
+        id="playground-section"
+        class="w-full h-full min-h-screen fixed inset-0 z-40 items-center justify-center"
+      >
+        <!-- The Terminal / Code Area (Centered) -->
+        <div class="relative w-full max-w-4xl group">
+          <!-- Window Controls Decoration -->
+          <div
+            class="absolute -top-10 left-0 right-0 h-10 bg-slate-900/80 rounded-t-xl border-x border-t border-slate-800 flex items-center px-4 gap-2 backdrop-blur-md"
+          >
+            <div
+              class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"
+            ></div>
+            <div
+              class="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"
+            ></div>
+            <div
+              class="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"
+            ></div>
+            <div class="ml-4 text-xs font-mono text-slate-500" id="filename-display">
+              main.py
+            </div>
+          </div>
+
+          <!-- Code Content (Dynamic, loads from AI or default) -->
+          <div
+            id="code-container"
+            class="bg-slate-950/80 border border-slate-800 rounded-b-xl rounded-tr-xl p-8 md:p-12 shadow-2xl min-h-[400px] relative font-mono text-sm md:text-lg leading-relaxed outline-none cursor-text flex items-start text-slate-300 whitespace-pre-wrap break-words"
+          >
+            <code id="code-display">
+# Loading code challenge...
+# Press Start when ready!
+            </code>
+            <span
+              class="text-teal-400 border-r-2 border-teal-400 animate-pulse h-8 ml-1"
+            ></span>
+          </div>
+        </div>
+
+        <!-- STATS BAR (Bottom Left Corner) -->
+        <div class="fixed bottom-8 left-8 flex gap-8 z-50">
+          <div>
+            <div
+              class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1"
+            >
+              Time
+            </div>
+            <div class="text-2xl font-mono text-teal-400">00:00</div>
+          </div>
+          <div>
+            <div
+              class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1"
+            >
+              WPM
+            </div>
+            <div class="text-2xl font-mono text-slate-300">0</div>
+          </div>
+          <div>
+            <div
+              class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1"
+            >
+              ACC
+            </div>
+            <div class="text-2xl font-mono text-slate-300">100%</div>
+          </div>
+        </div>
+        
+        <!-- KEYBOARD (Bottom Center) -->
+        <div class="fixed bottom-0 left-1/2 -translate-x-1/2 mb-4 z-40 scale-75 md:scale-90 origin-bottom">
+           <div id="keyboard-container" class="relative bg-gray-800 p-6 rounded-xl shadow-2xl border-t-4 border-gray-700">
+             <img id="left-hand" src="asset/images/left-resting-hand.png" alt="Left Hand" class="hand" style="transform: translate(50px, 80px);">
+             <img id="right-hand" src="asset/images/right-resting-hand.png" alt="Right Hand" class="hand" style="transform: translate(500px, 80px);">
+             <div id="keyboard" class="grid gap-1.5" style="grid-template-rows: repeat(5, minmax(0, 1fr));"></div>
+           </div>
+        </div>
+
+        <!-- LANGUAGE INFO (Bottom Right Corner) -->
+        <div
+          class="fixed bottom-8 right-8 flex items-center gap-2 text-slate-500 text-sm z-50"
+        >
+          <span>python</span>
+          <span class="w-1 h-1 bg-slate-700 rounded-full"></span>
+          <span>medium</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950 pt-16 pb-12">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div class="col-span-2 md:col-span-1">
+            <div
+              class="flex items-center gap-2 text-teal-400 font-bold text-xl tracking-tighter mb-4"
+            >
+              <i data-lucide="terminal" width="24" height="24"></i>
+              <span>Type<span class="text-white">Code</span></span>
+            </div>
+            <p class="text-slate-500 text-sm leading-relaxed mb-6">
+              The open-source typing platform designed to help developers
+              improve their speed and accuracy.
+            </p>
+            <div class="flex gap-4">
+              <a
+                href="#"
+                class="text-slate-500 hover:text-white transition-colors"
+                ><i data-lucide="github" width="20" height="20"></i
+              ></a>
+              <a
+                href="#"
+                class="text-slate-500 hover:text-white transition-colors"
+                ><i data-lucide="twitter" width="20" height="20"></i
+              ></a>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Platform</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Speed Test</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Multiplayer</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Leaderboard</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Resources</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Touch Typing Guide</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >API Docs</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Changelog</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold mb-4">Legal</h4>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Privacy Policy</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Terms of Service</a
+                >
+              </li>
+              <li>
+                <a href="#" class="hover:text-teal-400 transition-colors"
+                  >Cookie Settings</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div
+          class="border-t border-slate-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <p class="text-slate-600 text-xs">
+            © 2025 TypeCode Inc. All rights reserved.
+          </p>
+          <div class="flex gap-2 items-center text-xs text-slate-600">
+            <span class="w-2 h-2 rounded-full bg-teal-500/50"></span>
+            System Operational
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      lucide.createIcons();
+    </script>
+    <script src="asset/js/ai-helper.js"></script>
+    <script src="asset/js/ai-integration.js"></script>
+    <script src="asset/js/keyboard.js"></script>
+    <script src="asset/js/practice.js"></script>
+    <script src="asset/js/nav.js"></script>
+</body>
+</html>
