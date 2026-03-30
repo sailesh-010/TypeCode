@@ -6,8 +6,180 @@ const llm = require('../ai/llm');
 const scoreModel = require('../../models/scoremodel');
 const userModel = require('../../models/userModel');
 const logger = require('../../utils/logger');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { normalizeLanguage, getDisplayName, isSupported } = require('../utils/languageNormalizer');
+const { validateLanguage } = require('../utils/codeValidator');
+
+// Initialize Google AI
+const apiKey = process.env.GOOGLE_API_KEY || 'AIzaSyCRowZrsPXf7P70A--q7ur4nEx9-WNB07A';
+const genAI = new GoogleGenerativeAI(apiKey);
+const MODEL_NAME = 'gemini-2.0-flash';
 
 class AIService {
+  /**
+   * Generate code snippet for typing practice using AI
+   */
+  async generateCodeForPractice(language = 'Random', difficulty = 'Random', topic = 'Random') {
+    try {
+      const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+      
+      // Handle random selections
+      const langs = ['Python', 'C', 'Java', 'JavaScript', 'C++'];
+      const diffs = ['Easy', 'Medium', 'Hard'];
+      
+      const actualLang = (!language || language.toLowerCase() === 'random') 
+        ? langs[Math.floor(Math.random() * langs.length)] 
+        : language;
+        
+      const actualDiff = (!difficulty || difficulty.toLowerCase() === 'random') 
+        ? diffs[Math.floor(Math.random() * diffs.length)] 
+        : difficulty;
+
+      // Normalize language immediately after receiving it
+      const normalizedLang = normalizeLanguage(actualLang);
+      const displayName = getDisplayName(normalizedLang);
+
+      // Log warning when unknown language variation is encountered
+      if (!isSupported(actualLang)) {
+        logger.warn('Unknown language variation encountered', {
+          requestedLanguage: actualLang,
+          normalizedTo: normalizedLang,
+          difficulty: actualDiff,
+          topic: topic || 'Random'
+        });
+      }
+
+      let topicInstruction = '';
+      if (topic && topic.toLowerCase() !== 'random' && topic.trim() !== '') {
+        topicInstruction = `The code MUST be specifically related to the following topic: "${topic}".`;
+      } else {
+        topicInstruction = 'The code can be about any standard programming concept, algorithm, or everyday functionality.';
+      }
+      
+      const difficultyLower = actualDiff.toLowerCase();
+      
+      // Use normalized language key in AI prompt generation
+      const prompts = {
+        easy: `Generate a very simple, beginner-friendly ${displayName} code snippet (about 3-5 lines). It should be easy to type. ${topicInstruction} Do not include markdown formatting or explanations, just the plain code.`,
+        medium: `Generate a moderately complex ${displayName} function (about 8-12 lines) showing standard syntax and logic. ${topicInstruction} Do not include markdown formatting or explanations, just the plain code.`,
+        hard: `Generate an advanced algorithmic or complex ${displayName} code snippet (about 15-20 lines) including advanced features of the language. ${topicInstruction} Use standard indentation. Do not include markdown formatting or explanations, just the plain code.`
+      };
+
+      const prompt = prompts[difficultyLower] || prompts.medium;
+      
+      const result = await model.generateContent(prompt);
+      let generatedCode = result.response.text().trim();
+      
+      // Remove any markdown code block wrap if the AI ignored instructions
+      generatedCode = generatedCode.replace(/^```[a-z+]*\n/im, '').replace(/\n```$/m, '').trim();
+
+      // Add validation step after AI code generation
+      const validation = validateLanguage(generatedCode, normalizedLang);
+      
+      if (!validation.isValid) {
+        // If validation fails, log warning and use fallback code
+        logger.warn('Language mismatch detected', {
+          requestedLanguage: normalizedLang,
+          detectedLanguage: validation.detectedLanguage || 'unknown',
+          confidence: validation.confidence.toFixed(2),
+          difficulty: actualDiff,
+          topic: topic || 'Random'
+        });
+        
+        // Use fallback code instead
+        return this.getFallbackCode(normalizedLang, actualDiff, topic);
+      }
+
+      return {
+        success: true,
+        exercise: {
+          id: Date.now(),
+          language: displayName,
+          difficulty: actualDiff,
+          topic: topic,
+          content: generatedCode,
+          timeLimit: difficultyLower === 'easy' ? 60 : difficultyLower === 'medium' ? 120 : 240,
+        }
+      };
+    } catch (error) {
+      // Log AI generation failure with full context
+      const actualLangForFallback = (!language || language.toLowerCase() === 'random') ? 'JavaScript' : language;
+      const actualDiffForFallback = (!difficulty || difficulty.toLowerCase() === 'random') ? 'Medium' : difficulty;
+      const normalizedLang = normalizeLanguage(actualLangForFallback);
+      
+      logger.error('AI generation failed', {
+        requestedLanguage: normalizedLang,
+        difficulty: actualDiffForFallback,
+        topic: topic || 'Random',
+        error: error.message || String(error)
+      });
+      
+      // Use normalized language for fallback
+      return this.getFallbackCode(normalizedLang, actualDiffForFallback, topic);
+    }
+  }
+
+  /**
+   * Get fallback code for a given language and difficulty
+   */
+  getFallbackCode(normalizedLang, difficulty, topic) {
+    const diffKey = difficulty.toLowerCase();
+    const displayName = getDisplayName(normalizedLang);
+
+    // Log when fallback code is used
+    logger.info('Using fallback code', {
+      requestedLanguage: normalizedLang,
+      difficulty: difficulty,
+      topic: topic || 'Random'
+    });
+
+    // Fallback code dictionary with normalized keys (lowercase, "c++" not "cpp")
+    const fallbacks = {
+      python: {
+        easy: 'def hello_world():\n    print("Hello, world!")\n\nhello_world()',
+        medium: 'def calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price * item.quantity\n    return total',
+        hard: 'class DataFetcher:\n    def __init__(self, url):\n        self.url = url\n\n    async def fetch(self):\n        import aiohttp\n        async with aiohttp.ClientSession() as session:\n            async with session.get(self.url) as response:\n                return await response.json()'
+      },
+      javascript: {
+        easy: 'console.log("Hello, World!");\nlet x = 10;\nlet y = 20;\nconsole.log(x + y);',
+        medium: 'function calculateTotal(items) {\n  let total = 0;\n  for (let item of items) {\n    total += item.price * item.quantity;\n  }\n  return total;\n}',
+        hard: 'class User {\n  constructor(name) {\n    this.name = name;\n  }\n\n  async fetchData() {\n    const response = await fetch("/api/data");\n    return await response.json();\n  }\n}'
+      },
+      java: {
+        easy: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World!");\n    }\n}',
+        medium: 'public int calculateTotal(Item[] items) {\n    int total = 0;\n    for (Item item : items) {\n        total += item.getPrice() * item.getQuantity();\n    }\n    return total;\n}',
+        hard: 'import java.util.concurrent.CompletableFuture;\n\npublic class Fetcher {\n    public CompletableFuture<String> fetchData() {\n        return CompletableFuture.supplyAsync(() -> {\n            try {\n                Thread.sleep(1000);\n                return "Data loaded";\n            } catch (InterruptedException e) {\n                return "Error";\n            }\n        });\n    }\n}'
+      },
+      c: {
+        easy: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
+        medium: 'int calculateTotal(int prices[], int quantities[], int size) {\n    int total = 0;\n    for(int i=0; i<size; i++) {\n        total += prices[i] * quantities[i];\n    }\n    return total;\n}',
+        hard: '#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct Node {\n    int data;\n    struct Node* next;\n} Node;\n\nNode* createNode(int value) {\n    Node* newNode = (Node*)malloc(sizeof(Node));\n    newNode->data = value;\n    newNode->next = NULL;\n    return newNode;\n}'
+      },
+      'c++': {
+        easy: '#include <iostream>\n\nint main() {\n    std::cout << "Hello World!" << std::endl;\n    return 0;\n}',
+        medium: '#include <vector>\n\nint calculateTotal(const std::vector<int>& prices) {\n    int total = 0;\n    for(int price : prices) {\n        total += price;\n    }\n    return total;\n}',
+        hard: '#include <iostream>\n#include <memory>\n\nclass Shape {\npublic:\n    virtual void draw() const = 0;\n    virtual ~Shape() = default;\n};\n\nclass Circle : public Shape {\npublic:\n    void draw() const override {\n        std::cout << "Drawing a circle\\n";\n    }\n};'
+      }
+    };
+
+    // Use normalized key for fallback code lookup
+    const langFallbacks = fallbacks[normalizedLang] || fallbacks.javascript;
+    const fallbackCode = langFallbacks[diffKey] || langFallbacks.medium;
+
+    return {
+      success: false,
+      error: 'Failed to generate code with AI. Returning fallback code.',
+      exercise: {
+        id: Date.now(),
+        language: displayName,
+        difficulty: difficulty,
+        topic: topic,
+        content: fallbackCode,
+        timeLimit: diffKey === 'easy' ? 60 : diffKey === 'medium' ? 120 : 240
+      }
+    };
+  }
+
   /**
    * Get personalized recommendations for a user
    */
@@ -249,4 +421,25 @@ class AIService {
   }
 }
 
-module.exports = new AIService();
+const aiService = new AIService();
+
+// Test the code generation
+if (require.main === module) {
+  (async () => {
+    console.log('🤖 Testing AI Code Generation for Practice Session...');
+    
+    console.log('\n➡️  Generating EASY python practice...');
+    const easyCode = await aiService.generateCodeForPractice('Python', 'Easy', '');
+    console.log(easyCode.exercise);
+    
+    console.log('\n➡️  Generating CUSTOM TOPIC javascript practice...');
+    const topicCode = await aiService.generateCodeForPractice('JavaScript', 'Hard', 'Binary Search Tree');
+    console.log(topicCode.exercise);
+
+    console.log('\n➡️  Generating RANDOM practice...');
+    const randomCode = await aiService.generateCodeForPractice('Random', 'Random', 'Random');
+    console.log(randomCode.exercise);
+  })();
+}
+
+module.exports = aiService;

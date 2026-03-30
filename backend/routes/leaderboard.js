@@ -108,4 +108,67 @@ router.get('/rank/:userId', (req, res) => {
   }
 });
 
+/**
+ * GET /api/leaderboard/rankings
+ * Get paginated leaderboard rankings
+ */
+router.get('/rankings', (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const skip = parseInt(req.query.skip) || 0;
+    
+    const fullLeaderboard = scoreModel.getLeaderboard(1000);
+    const paginatedData = fullLeaderboard.slice(skip, skip + limit);
+    
+    sendSuccess(res, HTTP_STATUS.OK, {
+      count: paginatedData.length,
+      total: fullLeaderboard.length,
+      data: paginatedData.map(entry => ({
+        rank: entry.rank,
+        name: entry.username,
+        wpm: entry.bestWPM,
+        accuracy: entry.averageAccuracy || 0
+      }))
+    });
+  } catch (error) {
+    logger.error('Rankings fetch error:', error);
+    sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Failed to fetch rankings');
+  }
+});
+
+/**
+ * GET /api/user-ranking/:userId (alias endpoint)
+ * Get user's ranking information for leaderboard display
+ */
+router.get('/:userId', (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const leaderboard = scoreModel.getLeaderboard(1000);
+    const userEntry = leaderboard.find(u => u.userId === userId);
+
+    if (!userEntry) {
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'User not found in leaderboard');
+    }
+
+    // Calculate percentile
+    const totalUsers = leaderboard.length;
+    const percentile = totalUsers > 0 
+      ? Math.round((1 - (userEntry.rank - 1) / totalUsers) * 100) 
+      : 100;
+
+    sendSuccess(res, HTTP_STATUS.OK, {
+      data: {
+        rank: userEntry.rank,
+        name: userEntry.username,
+        wpm: userEntry.bestWPM,
+        accuracy: userEntry.averageAccuracy || 0,
+        percentile: percentile
+      }
+    });
+  } catch (error) {
+    logger.error('User ranking fetch error:', error);
+    sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Failed to fetch user ranking');
+  }
+});
+
 module.exports = router;

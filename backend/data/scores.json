@@ -1,0 +1,41 @@
+{
+  "scores": [
+    {
+      "id": 1,
+      "userId": 4,
+      "username": "sailesh12",
+      "wpm": 16,
+      "accuracy": 82,
+      "testType": "practice",
+      "duration": 44,
+      "wordsTyped": 12,
+      "errorsCount": 13,
+      "createdAt": "2026-03-30T09:13:29.816Z"
+    },
+    {
+      "id": 2,
+      "userId": 4,
+      "username": "sailesh12",
+      "wpm": 23,
+      "accuracy": 95,
+      "testType": "Python",
+      "duration": 29,
+      "wordsTyped": 11,
+      "errorsCount": 3,
+      "createdAt": "2026-03-30T10:24:30.442Z"
+    },
+    {
+      "id": 3,
+      "userId": 4,
+      "username": "sailesh12",
+      "wpm": 23,
+      "accuracy": 98,
+      "testType": "Python",
+      "duration": 31,
+      "wordsTyped": 11,
+      "errorsCount": 1,
+      "createdAt": "2026-03-30T10:27:23.191Z"
+    }
+  ],
+  "nextId": 4
+}

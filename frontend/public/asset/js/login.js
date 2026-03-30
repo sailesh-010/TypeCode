@@ -12,7 +12,7 @@ loginForm.addEventListener("submit", async (e) => {
   hideError();
 
   const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const password = document.getElementById("password").value;
 
   if (!email || !password) {
     return showError("Please fill all fields");

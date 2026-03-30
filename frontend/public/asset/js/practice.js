@@ -5,14 +5,15 @@ function change() {
 }
 
 const langMap = {
-  javascript: "js",
-  python: "py",
-  java: "java",
-  c: "c",
-  cpp: "cpp",
+  javascript: "JavaScript",
+  python: "Python",
+  java: "Java",
+  c: "C",
+  cpp: "C++",
 };
 
-const state = {
+// Make state global so typing engine can access it
+window.state = {
   language: null,
   difficulty: null,
   topic: null,
@@ -39,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('input[name="language"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       const l = radio.value.toLowerCase();
-      state.language = langMap[l] || l;
+      window.state.language = langMap[l] || l;
       lucide.createIcons();
     });
   });
@@ -47,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Track difficulty selection
   document.querySelectorAll('input[name="difficulty"]').forEach((radio) => {
     radio.addEventListener("change", () => {
-      state.difficulty = radio.value;
+      window.state.difficulty = radio.value;
     });
   });
 
@@ -70,14 +71,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const l = langSelected.value.toLowerCase();
-    state.language = langMap[l] || l;
-    state.difficulty = diffSelected.value;
-    state.topic = topicCustom?.checked ? topicInput.value : "random";
+    window.state.language = langMap[l] || langSelected.value;
+    window.state.difficulty = diffSelected.value;
+    window.state.topic = topicCustom?.checked ? topicInput.value : "Random";
 
     // Enter game mode
     document.body.classList.add("game-mode");
 
-    // Update playground info
+    // Update playground info - use display format for UI
     const langDisplay = document.querySelector(
       "#playground-section .fixed.bottom-8.right-8 span:first-child"
     );
@@ -86,15 +87,25 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const filenameDisplay = document.getElementById("filename-display");
 
-    if (langDisplay) langDisplay.textContent = state.language;
-    if (diffDisplay) diffDisplay.textContent = state.difficulty;
+    // Map language to file extension
+    const extMap = {
+      'JavaScript': 'js',
+      'Python': 'py',
+      'Java': 'java',
+      'C': 'c',
+      'C++': 'cpp'
+    };
+
+    if (langDisplay) langDisplay.textContent = window.state.language;
+    if (diffDisplay) diffDisplay.textContent = window.state.difficulty;
     if (filenameDisplay) {
       const topicName =
-        state.topic === "random" ? "main" : state.topic.replace(/\s+/g, "_");
-      filenameDisplay.textContent = `${topicName}.${state.language}`;
+        window.state.topic === "Random" ? "main" : window.state.topic.replace(/\s+/g, "_");
+      const ext = extMap[window.state.language] || 'txt';
+      filenameDisplay.textContent = `${topicName}.${ext}`;
     }
 
-    console.log("Starting practice:", state);
+    console.log("Starting practice:", window.state);
     
     // Load code challenge from AI
     await loadPracticeCode();
@@ -122,25 +133,40 @@ async function loadPracticeCode() {
   if (!codeDisplay) return;
 
   // Show loading state
-  codeDisplay.textContent = '# Loading code challenge...';
+  codeDisplay.textContent = '# Loading code challenge from AI...';
 
   try {
-    // Use AI helper if available
-    if (typeof AIHelper !== 'undefined') {
-      const challenge = await AIHelper.generateChallenge(
-        state.language || 'javascript',
-        state.difficulty || 'easy',
-        state.topic || 'random'
-      );
-      
-      if (challenge) {
+    // Check if AI helper is available
+    if (typeof AIHelper === 'undefined') {
+      codeDisplay.textContent = '// Error: AI Helper not loaded. Please refresh the page.';
+      return;
+    }
+
+    const challenge = await AIHelper.generateChallenge(
+      window.state.language || 'JavaScript',
+      window.state.difficulty || 'Medium',
+      window.state.topic || 'Random'
+    );
+    
+    if (challenge) {
+      // Initialize typing engine
+      if (typeof TypingEngine !== 'undefined') {
+        const typingEngine = new TypingEngine(codeDisplay);
+        typingEngine.init(challenge);
+        
+        // Store in global state for later use
+        window.currentTypingEngine = typingEngine;
+      } else {
+        // Fallback: just display the code
         codeDisplay.textContent = challenge;
-        console.log('[Practice] Code loaded from AI');
-        return;
       }
+      
+      return;
+    } else {
+      codeDisplay.textContent = '// No code returned. Please try again.';
     }
   } catch (error) {
-    console.warn('[Practice] AI challenge failed:', error);
+    codeDisplay.textContent = '// Error loading code. Please refresh and try again.';
   }
 }
 

@@ -12,6 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="asset/css/keyboard.css">
+    <link rel="stylesheet" href="asset/css/typing-animation.css">
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -399,15 +400,12 @@
           <!-- Code Content (Dynamic, loads from AI or default) -->
           <div
             id="code-container"
-            class="bg-slate-950/80 border border-slate-800 rounded-b-xl rounded-tr-xl p-8 md:p-12 shadow-2xl min-h-[400px] relative font-mono text-sm md:text-lg leading-relaxed outline-none cursor-text flex items-start text-slate-300 whitespace-pre-wrap break-words"
+            class="bg-slate-950/80 border border-slate-800 rounded-b-xl rounded-tr-xl p-8 md:p-12 shadow-2xl min-h-[400px] relative font-mono text-sm md:text-lg leading-relaxed outline-none flex items-start text-slate-300 whitespace-pre-wrap break-words"
           >
             <code id="code-display">
 # Loading code challenge...
 # Press Start when ready!
             </code>
-            <span
-              class="text-teal-400 border-r-2 border-teal-400 animate-pulse h-8 ml-1"
-            ></span>
           </div>
         </div>
 
@@ -569,6 +567,7 @@
     <script>
       lucide.createIcons();
     </script>
+    <script src="asset/js/typing-engine.js"></script>
     <script src="asset/js/ai-helper.js"></script>
     <script src="asset/js/ai-integration.js"></script>
     <script src="asset/js/keyboard.js"></script>

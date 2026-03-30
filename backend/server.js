@@ -59,6 +59,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/user-ranking', leaderboardRoutes); // Alias for user ranking endpoint
 app.use('/api/ai', aiRoutes);
 
 // Global error handler (must have 4 params)

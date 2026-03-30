@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Integration Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background: #00ff00;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #000;
+            border: 1px solid #00ff00;
+            white-space: pre-wrap;
+            min-height: 200px;
+        }
+        .log {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #00ff00;
+            padding-left: 10px;
+        }
+        .error {
+            border-left-color: #ff0000;
+            color: #ff0000;
+        }
+        .success {
+            border-left-color: #00ff00;
+            color: #00ff00;
+        }
+        .info {
+            border-left-color: #ffff00;
+            color: #ffff00;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 AI Integration Test</h1>
+    <p>This page tests if the frontend can call the backend AI API.</p>
+    
+    <div>
+        <button onclick="testAPI()">Test API Connection</button>
+        <button onclick="testPython()">Test Python Generation</button>
+        <button onclick="testCPP()">Test C++ Generation</button>
+        <button onclick="testCustomTopic()">Test Custom Topic</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script src="asset/js/ai-helper.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+
+        async function testAPI() {
+            log('Testing API connection...', 'info');
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                log(`✅ API is reachable: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                log(`❌ API connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPython() {
+            log('Testing Python code generation...', 'info');
+            try {
+                const code = await AIHelper.generateChallenge('Python', 'Easy', 'Random');
+                if (code) {
+                    log(`✅ Python code generated successfully!`, 'success');
+                    log(`Code preview: ${code.substring(0, 100)}...`, 'info');
+                } else {
+                    log(`⚠️ No code returned`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Python generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCPP() {
+            log('Testing C++ code generation (CPP variation)...', 'info');
+            try {
+                const code = await AIHelper.generateChallenge('CPP', 'Medium', 'Random');
+                if (code) {
+                    log(`✅ C++ code generated successfully!`, 'success');
+                    log(`Code preview: ${code.substring(0, 100)}...`, 'info');
+                } else {
+                    log(`⚠️ No code returned`, 'error');
+                }
+            } catch (error) {
+                log(`❌ C++ generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCustomTopic() {
+            log('Testing custom topic (Binary Search)...', 'info');
+            try {
+                const code = await AIHelper.generateChallenge('JavaScript', 'Medium', 'Binary Search');
+                if (code) {
+                    log(`✅ Custom topic code generated successfully!`, 'success');
+                    log(`Code preview: ${code.substring(0, 100)}...`, 'info');
+                } else {
+                    log(`⚠️ No code returned`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Custom topic generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            log('Page loaded. Click buttons to test AI integration.', 'info');
+            log('Check browser console (F12) for detailed logs.', 'info');
+        });
+    </script>
+</body>
+</html>

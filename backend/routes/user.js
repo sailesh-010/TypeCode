@@ -4,24 +4,17 @@ const userModel = require('../models/userModel');
 const scoreModel = require('../models/scoremodel');
 const { verifyToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const challengeCompletionService = require('../services/challengeCompletionService');
 
 /**
  * POST /api/user/score
  * Record a typing test score
  */
-router.post('/score', verifyToken, (req, res) => {
+router.post('/score', verifyToken, async (req, res) => {
   try {
     const { wpm, accuracy, testType, duration, wordsTyped, errorsCount } = req.body;
 
-    // Validate input
-    if (!wpm || typeof accuracy !== 'number') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid score data'
-      });
-    }
-
-    // Get user
+    // Get user from database to fetch username
     const user = userModel.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
@@ -30,27 +23,45 @@ router.post('/score', verifyToken, (req, res) => {
       });
     }
 
-    // Record score
-    const score = scoreModel.create({
-      userId: user.id,
+    // Extract challenge data from request
+    const challengeData = {
+      userId: req.user.id,
       username: user.username,
-      wpm: Math.round(wpm),
-      accuracy: Math.round(accuracy),
+      wpm: typeof wpm === 'number' ? wpm : parseFloat(wpm),
+      accuracy: typeof accuracy === 'number' ? accuracy : parseFloat(accuracy),
       testType: testType || 'standard',
-      duration: duration || 60,
-      wordsTyped: wordsTyped || 0,
-      errorsCount: errorsCount || 0
-    });
+      duration: typeof duration === 'number' ? duration : parseFloat(duration) || 60,
+      wordsTyped: typeof wordsTyped === 'number' ? wordsTyped : parseInt(wordsTyped) || 0,
+      errorsCount: typeof errorsCount === 'number' ? errorsCount : parseInt(errorsCount) || 0
+    };
+
+    // Call challengeCompletionService.processCompletion
+    const result = await challengeCompletionService.processCompletion(challengeData);
 
     logger.info(`Score recorded for user ${user.username}: ${wpm} WPM`);
 
+    // Return success response with score, statistics, and rank
     res.status(201).json({
       success: true,
-      message: 'Score recorded successfully',
-      score
+      score: result.score,
+      statistics: result.statistics,
+      rank: result.rank
     });
   } catch (error) {
     logger.error('Score recording error:', error);
+    
+    // Handle errors with appropriate status codes and messages
+    if (error.message && (
+      error.message.includes('Missing required field') ||
+      error.message.includes('must be') ||
+      error.message.includes('between')
+    )) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Failed to record score'
@@ -87,21 +98,38 @@ router.get('/scores', verifyToken, (req, res) => {
 router.get('/stats', verifyToken, (req, res) => {
   try {
     const user = userModel.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Use statistics from user model (updated by challengeCompletionService)
+    const statistics = user.statistics || {
+      bestWPM: 0,
+      averageWPM: 0,
+      totalTests: 0,
+      averageAccuracy: 0,
+      lastTestDate: null
+    };
+
+    // Also get total words typed and errors from scores for additional stats
     const userScores = scoreModel.getUserScores(req.user.id);
-    const bestScore = scoreModel.getUserBestScore(req.user.id);
-    const averageWPM = scoreModel.getUserAverageWPM(req.user.id);
+    const totalWordsTyped = userScores.reduce((sum, s) => sum + (s.wordsTyped || 0), 0);
+    const totalErrors = userScores.reduce((sum, s) => sum + (s.errorsCount || 0), 0);
 
     const stats = {
       userId: user.id,
       username: user.username,
-      totalTests: userScores.length,
-      bestWPM: bestScore?.wpm || 0,
-      averageWPM,
-      totalWordsTyped: userScores.reduce((sum, s) => sum + s.wordsTyped, 0),
-      totalErrors: userScores.reduce((sum, s) => sum + s.errorsCount, 0),
-      averageAccuracy: userScores.length > 0
-        ? Math.round(userScores.reduce((sum, s) => sum + s.accuracy, 0) / userScores.length)
-        : 0
+      totalTests: statistics.totalTests,
+      bestWPM: statistics.bestWPM,
+      averageWPM: statistics.averageWPM,
+      averageAccuracy: statistics.averageAccuracy,
+      lastTestDate: statistics.lastTestDate,
+      totalWordsTyped,
+      totalErrors
     };
 
     res.json({

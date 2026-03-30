@@ -30,16 +30,52 @@ document.addEventListener("DOMContentLoaded", async () => {
 /**
  * Load full leaderboard with pagination
  */
-async function loadLeaderboard(limit = 5, skip = 0) {
+async function loadLeaderboard(limit = 10, skip = 0) {
   try {
-    const response = await fetch(`/api/leaderboard/rankings?limit=${limit}&skip=${skip}`);
+    console.log('Fetching leaderboard...');
+    
+    // Use the main leaderboard endpoint that we know works
+    const response = await fetch(`/api/leaderboard?limit=${limit}`);
     const result = await response.json();
     
-    if (result.success) {
-      renderLeaderboard(result.data);
-      updateLoadMoreButton(result.count, result.total);
+    console.log('Leaderboard API response:', result);
+    
+    if (result.success && result.data) {
+      let leaderboardData = [];
+      
+      // Handle different response formats
+      if (Array.isArray(result.data.leaderboard)) {
+        // Format: { success: true, data: { leaderboard: [...] } }
+        leaderboardData = result.data.leaderboard.map((entry, index) => ({
+          rank: entry.rank || (index + 1),
+          name: entry.username || entry.name || 'Unknown',
+          wpm: entry.bestWPM || entry.wpm || 0,
+          accuracy: entry.averageAccuracy || entry.accuracy || 0,
+          userId: entry.userId
+        }));
+      } else if (Array.isArray(result.data)) {
+        // Format: { success: true, data: [...] }
+        leaderboardData = result.data.map((entry, index) => ({
+          rank: entry.rank || (index + 1),
+          name: entry.username || entry.name || 'Unknown',
+          wpm: entry.bestWPM || entry.wpm || 0,
+          accuracy: entry.averageAccuracy || entry.accuracy || 0,
+          userId: entry.userId
+        }));
+      }
+      
+      console.log('Transformed leaderboard data:', leaderboardData);
+      
+      if (leaderboardData.length > 0) {
+        renderLeaderboard(leaderboardData);
+        updateLoadMoreButton(leaderboardData.length, result.data.count || leaderboardData.length);
+      } else {
+        console.log('No leaderboard entries found');
+        renderLeaderboard([]);
+      }
     } else {
-      showLeaderboardError();
+      console.error('Invalid leaderboard response:', result);
+      renderLeaderboard([]);
     }
   } catch (error) {
     console.error('Error loading leaderboard:', error);
@@ -51,23 +87,127 @@ async function loadLeaderboard(limit = 5, skip = 0) {
  * Load user's ranking information
  */
 async function loadUserRanking(userId) {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    displayGuestRankingInfo();
+    return;
+  }
+
   try {
     console.log('Loading ranking for user:', userId);
-    const response = await fetch(`/api/user-ranking/${userId}`);
-    const result = await response.json();
     
-    console.log('Ranking result:', result);
+    // Fetch user stats (same as profile page)
+    const statsResponse = await fetch('/api/user/stats', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const statsResult = await statsResponse.json();
     
-    if (result.success) {
-      displayUserRankingInfo(result.data);
-    } else {
-      console.error('User ranking not found:', result.message);
-      displayGuestRankingInfo();
+    console.log('Stats result:', statsResult);
+    
+    if (!statsResult.success || !statsResult.stats || statsResult.stats.totalTests === 0) {
+      console.log('User has no scores yet');
+      displayNoRankingMessage();
+      return;
     }
+    
+    // Fetch full leaderboard to calculate rank
+    const leaderboardResponse = await fetch('/api/leaderboard?limit=1000');
+    const leaderboardResult = await leaderboardResponse.json();
+    
+    console.log('Leaderboard result:', leaderboardResult);
+    
+    let rank = '-';
+    let percentile = 0;
+    
+    if (leaderboardResult.success && leaderboardResult.data && leaderboardResult.data.leaderboard) {
+      const leaderboard = leaderboardResult.data.leaderboard;
+      
+      // Find user's position in leaderboard
+      const userPosition = leaderboard.findIndex(entry => entry.userId === parseInt(userId));
+      
+      if (userPosition !== -1) {
+        rank = userPosition + 1; // 1-indexed rank
+        
+        // Calculate percentile (higher is better)
+        const totalUsers = leaderboard.length;
+        percentile = totalUsers > 0 ? Math.round((1 - userPosition / totalUsers) * 100) : 100;
+      } else {
+        // User not in leaderboard yet, calculate rank based on bestWPM
+        const userBestWPM = statsResult.stats.bestWPM || 0;
+        let betterUsers = 0;
+        
+        for (const entry of leaderboard) {
+          if (entry.bestWPM > userBestWPM) {
+            betterUsers++;
+          }
+        }
+        
+        rank = betterUsers + 1;
+        const totalUsers = leaderboard.length + 1; // Include current user
+        percentile = Math.round((1 - betterUsers / totalUsers) * 100);
+      }
+    }
+    
+    // Combine stats and rank data
+    const userData = {
+      rank: rank,
+      name: statsResult.stats.username || 'User',
+      wpm: statsResult.stats.bestWPM || 0,
+      accuracy: statsResult.stats.averageAccuracy || 0,
+      percentile: percentile
+    };
+    
+    console.log('Final user data:', userData);
+    
+    displayUserRankingInfo(userData);
   } catch (error) {
     console.error('Error loading user ranking:', error);
-    displayGuestRankingInfo();
+    displayNoRankingMessage();
   }
+}
+
+/**
+ * Display message when user has no ranking yet
+ */
+function displayNoRankingMessage() {
+  const rankingContainer = document.getElementById('user-ranking-container');
+  
+  if (!rankingContainer) {
+    return;
+  }
+
+  const html = `
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
+      <div class="flex items-center gap-4">
+        <div class="flex flex-col items-center">
+          <div class="font-mono text-slate-600 font-bold text-3xl">-</div>
+          <div class="text-xs text-slate-500 uppercase">Your Rank</div>
+        </div>
+        <div class="w-px h-12 bg-slate-700"></div>
+        <div class="flex flex-col">
+          <span class="text-white font-semibold text-lg">Complete a challenge to get ranked!</span>
+          <span class="text-xs text-slate-400">
+            Your rank will appear here after you complete your first typing test
+          </span>
+        </div>
+      </div>
+      <div class="flex gap-8">
+        <div class="text-center">
+          <div class="text-xs text-slate-500 uppercase mb-1">WPM</div>
+          <div class="text-slate-600 font-mono text-xl font-bold">-</div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-slate-500 uppercase mb-1">Accuracy</div>
+          <div class="text-slate-600 font-mono text-xl font-bold">-</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  rankingContainer.innerHTML = html;
 }
 
 /**
@@ -78,6 +218,35 @@ function renderLeaderboard(users) {
   
   if (!container) {
     console.error('Leaderboard container not found');
+    return;
+  }
+  
+  // Ensure users is an array
+  if (!Array.isArray(users)) {
+    console.error('renderLeaderboard: users is not an array:', users);
+    users = [];
+  }
+  
+  if (users.length === 0) {
+    container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 px-6">
+        <div class="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
+          <i data-lucide="trophy" class="w-8 h-8 text-slate-600"></i>
+        </div>
+        <p class="text-slate-300 text-lg font-semibold mb-2">No leaderboard data available yet</p>
+        <p class="text-slate-500 text-sm text-center max-w-md">
+          Complete some typing challenges to appear on the leaderboard and compete with other developers!
+        </p>
+        <a href="/practice" class="mt-6 px-6 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold rounded-lg transition-colors inline-flex items-center gap-2">
+          <i data-lucide="play" class="w-4 h-4"></i>
+          Start Practicing
+        </a>
+      </div>
+    `;
+    // Re-initialize lucide icons for the new content
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
     return;
   }
   
@@ -127,22 +296,26 @@ function displayUserRankingInfo(userData) {
   }
 
   const html = `
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
       <div class="flex items-center gap-4">
-        <div class="font-mono text-teal-400 font-bold text-xl">#${userData.rank}</div>
+        <div class="flex flex-col items-center">
+          <div class="font-mono text-teal-400 font-bold text-3xl">#${userData.rank}</div>
+          <div class="text-xs text-slate-500 uppercase">Your Rank</div>
+        </div>
+        <div class="w-px h-12 bg-slate-700"></div>
         <div class="flex flex-col">
-          <span class="text-white font-medium">${userData.name}</span>
-          <span class="text-xs text-slate-400">Top ${userData.percentile}%</span>
+          <span class="text-white font-semibold text-lg">${userData.name}</span>
+          <span class="text-xs text-slate-400">Top ${userData.percentile}% of all users</span>
         </div>
       </div>
-      <div class="flex gap-6 text-right">
-        <div>
-          <div class="text-xs text-slate-500 uppercase">WPM</div>
-          <div class="text-white font-mono">${userData.wpm || 0}</div>
+      <div class="flex gap-8">
+        <div class="text-center">
+          <div class="text-xs text-slate-500 uppercase mb-1">WPM</div>
+          <div class="text-white font-mono text-xl font-bold">${userData.wpm || 0}</div>
         </div>
-        <div>
-          <div class="text-xs text-slate-500 uppercase">Acc</div>
-          <div class="text-white font-mono">${userData.accuracy || 0}%</div>
+        <div class="text-center">
+          <div class="text-xs text-slate-500 uppercase mb-1">Accuracy</div>
+          <div class="text-white font-mono text-xl font-bold">${userData.accuracy || 0}%</div>
         </div>
       </div>
     </div>
@@ -162,29 +335,31 @@ function displayGuestRankingInfo() {
   }
 
   const html = `
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
       <div class="flex items-center gap-4">
-        <div class="font-mono text-slate-400 font-bold text-xl">-</div>
+        <div class="flex flex-col items-center">
+          <div class="font-mono text-slate-600 font-bold text-3xl">-</div>
+          <div class="text-xs text-slate-500 uppercase">Your Rank</div>
+        </div>
+        <div class="w-px h-12 bg-slate-700"></div>
         <div class="flex flex-col">
-          <span class="text-white font-medium">Sign in to see your rank</span>
-          <span class="text-xs text-slate-400"><a href="/login" class="text-teal-400 hover:text-teal-300">Log in</a> or <a href="/signup" class="text-teal-400 hover:text-teal-300">Sign up</a></span>
+          <span class="text-white font-semibold text-lg">Sign in to see your rank</span>
+          <span class="text-xs text-slate-400">
+            <a href="/login" class="text-teal-400 hover:text-teal-300 transition-colors">Log in</a> 
+            or 
+            <a href="/signup" class="text-teal-400 hover:text-teal-300 transition-colors">Sign up</a> 
+            to track your progress
+          </span>
         </div>
       </div>
-      <div class="flex gap-6 text-right">
-        <div>
-          <div class="text-xs text-slate-500 uppercase">WPM</div>
-          <div class="text-white font-mono">-</div>
+      <div class="flex gap-8">
+        <div class="text-center">
+          <div class="text-xs text-slate-500 uppercase mb-1">WPM</div>
+          <div class="text-slate-600 font-mono text-xl font-bold">-</div>
         </div>
-        <div>
-          <div class="text-xs text-slate-500 uppercase">Acc</div>
-          <div class="text-white font-mono">-</div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  rankingContainer.innerHTML = html;
-}
+        <div class="text-center">
+          <div class="text-xs text-slate-500 uppercase mb-1">Accuracy</div>
+          <div class="text-slate-600 font-mono text-xl font-bold">-</div>
         </div>
       </div>
     </div>

@@ -1,0 +1,52 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "test@test.com",
+      "username": "test_user",
+      "fullName": "test user",
+      "password": "$2a$10$4/mKjjRcX.wvkXPpkJoh6uBnIAM6HjQeYbXXbRJJWI2otOLLdkMla",
+      "role": "user",
+      "createdAt": "2026-03-14T10:52:43.582Z",
+      "updatedAt": "2026-03-14T10:52:43.582Z"
+    },
+    {
+      "id": 2,
+      "email": "\"test393@test.com\"",
+      "username": "test1",
+      "fullName": "Test",
+      "password": "$2a$10$gkULsJvGij5rQmtmJXp5r.FflHgHT17zsCR4mOVSx9NM0Fv7MX1fK",
+      "role": "user",
+      "createdAt": "2026-03-14T10:55:51.261Z",
+      "updatedAt": "2026-03-14T10:55:51.261Z"
+    },
+    {
+      "id": 3,
+      "email": "realtest@test.com",
+      "username": "real",
+      "fullName": "Test",
+      "password": "$2a$10$I/QnuzgnuRT.lF6DAIAmQOMR/NW0YKFG2iVZwNYQ1w4A/gl7k6hYC",
+      "role": "user",
+      "createdAt": "2026-03-14T10:57:58.816Z",
+      "updatedAt": "2026-03-14T10:57:58.816Z"
+    },
+    {
+      "id": 4,
+      "email": "sdas@gmail.com",
+      "username": "sailesh12",
+      "fullName": "sailesh12",
+      "password": "$2a$10$D2d03/i0TH.Az3g/yPaySe5WFaUaYOinRhsAh9pMuaEFAtGnd7Mzi",
+      "role": "user",
+      "createdAt": "2026-03-29T14:29:14.337Z",
+      "updatedAt": "2026-03-30T10:27:23.193Z",
+      "statistics": {
+        "bestWPM": 23,
+        "averageWPM": 21,
+        "totalTests": 3,
+        "averageAccuracy": 92,
+        "lastTestDate": "2026-03-30T10:27:23.191Z"
+      }
+    }
+  ],
+  "nextId": 5
+}

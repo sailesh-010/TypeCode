@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // Register user
       const response = await apiPost("/api/auth/register", {
         fullName: name,
         username: name.replace(/\s+/g, '_').toLowerCase(),
@@ -75,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Auto-login after successful registration
       const loginRes = await apiPost("/api/auth/login", { email, password });
 
+      // Store auth data
       localStorage.setItem("token", loginRes.token);
       localStorage.setItem("currentUserId", loginRes.user.id);
       localStorage.setItem("currentUser", JSON.stringify(loginRes.user));

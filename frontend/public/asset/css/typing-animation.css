@@ -1,0 +1,116 @@
+/**
+ * Typing Animation Styles
+ */
+
+/* Correct character - green */
+.typed-correct {
+  color: #10b981 !important;
+  animation: fadeInGreen 0.1s ease-in;
+}
+
+/* Incorrect character - red */
+.typed-incorrect {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1);
+  animation: shakeChar 0.2s ease-in-out;
+}
+
+/* Current character - highlighted */
+.current-char {
+  background-color: rgba(20, 184, 166, 0.3);
+  color: #14b8a6 !important;
+  animation: pulse 1s ease-in-out infinite;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Untyped character - default */
+.untyped {
+  color: #94a3b8;
+  opacity: 0.6;
+}
+
+/* Fade in animation for correct characters */
+@keyframes fadeInGreen {
+  from {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Shake animation for incorrect characters */
+@keyframes shakeChar {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+/* Pulse animation for current character */
+@keyframes pulse {
+  0%, 100% {
+    background-color: rgba(20, 184, 166, 0.3);
+  }
+  50% {
+    background-color: rgba(20, 184, 166, 0.5);
+  }
+}
+
+/* Shake error animation for container */
+.shake-error {
+  animation: shakeContainer 0.3s ease-in-out;
+}
+
+@keyframes shakeContainer {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Code display container */
+#code-display {
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Smooth transitions */
+.typed-correct,
+.typed-incorrect,
+.current-char,
+.untyped {
+  transition: all 0.1s ease;
+}
+
+/* Success completion animation */
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.typing-complete {
+  animation: successPulse 1s ease-out;
+  border-color: #10b981 !important;
+}

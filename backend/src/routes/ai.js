@@ -1,33 +1,45 @@
+/**
+ * AI Routes
+ * Endpoints for typing practice AI features
+ */
+
 const express = require('express');
 const router = express.Router();
-const llm = require('../ai/llm');
+const typingAI = require('../ai/typingAI');
 const aiService = require('../service/aiService');
 const { verifyToken } = require('../../middleware/auth');
 const logger = require('../../utils/logger');
 
 /**
  * POST /api/ai/feedback
- * Get AI typing feedback
+ * Generate personalized typing feedback
  */
 router.post('/feedback', verifyToken, async (req, res) => {
   try {
-    const { userText, originalText, wpm, accuracy } = req.body;
+    const { wpm, accuracy, language, duration, errors } = req.body;
 
-    if (!userText || !originalText || wpm === undefined || accuracy === undefined) {
+    // Validate input
+    if (typeof wpm !== 'number' || typeof accuracy !== 'number') {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: 'Invalid performance data'
       });
     }
 
-    const feedback = await llm.generateFeedback(userText, originalText, wpm, accuracy);
+    const feedback = await typingAI.generatePersonalizedFeedback({
+      wpm,
+      accuracy,
+      language: language || 'general',
+      duration: duration || 0,
+      errors: errors || []
+    });
 
     res.json({
       success: true,
-      feedback
+      data: feedback
     });
   } catch (error) {
-    logger.error('AI feedback error:', error);
+    logger.error('Feedback generation error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to generate feedback'
@@ -37,23 +49,63 @@ router.post('/feedback', verifyToken, async (req, res) => {
 
 /**
  * GET /api/ai/exercise
- * Get AI-generated typing exercise
+ * Generate a typing exercise using AI Service (with language normalization and validation)
+ * Query params: language, difficulty, topic
  */
-router.get('/exercise', verifyToken, async (req, res) => {
+router.get('/exercise', async (req, res) => {
   try {
-    const difficulty = req.query.difficulty || 'medium';
+    const { language = 'JavaScript', difficulty = 'Medium', topic = 'Random' } = req.query;
 
-    const exercise = await llm.generateExercise(difficulty);
+    // Use the main AI service with language normalization and validation
+    const result = await aiService.generateCodeForPractice(language, difficulty, topic);
 
-    if (!exercise.success) {
-      return res.status(500).json(exercise);
+    // Ensure we always have exercise data
+    if (!result || !result.exercise) {
+      logger.error('AI service returned invalid result:', result);
+      return res.status(500).json({
+        success: false,
+        data: {},
+        message: 'Failed to generate exercise'
+      });
     }
 
     res.json({
+      success: result.success !== false, // Handle both success: true and success: false
+      data: result.exercise,
+      fallback: result.success === false // Indicate if fallback was used
+    });
+  } catch (error) {
+    logger.error('Exercise generation error:', error);
+    res.status(500).json({
+      success: false,
+      data: {},
+      message: 'Failed to generate exercise'
+    });
+  }
+});
+
+/**
+ * GET /api/ai/exercise/simple
+ * Generate a simple typing exercise using TypingAI (legacy endpoint)
+ * Query params: language, difficulty
+ */
+router.get('/exercise/simple', async (req, res) => {
+  try {
+    const { language = 'python', difficulty = 'medium' } = req.query;
+
+    // Validate difficulty
+    if (!['easy', 'medium', 'hard'].includes(difficulty.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid difficulty level'
+      });
+    }
+
+    const exercise = await typingAI.generateExercise(language, difficulty);
+
+    res.json({
       success: true,
-      exercise: exercise.exercise,
-      difficulty: exercise.difficulty,
-      wordCount: exercise.wordCount
+      data: exercise
     });
   } catch (error) {
     logger.error('Exercise generation error:', error);
@@ -66,24 +118,24 @@ router.get('/exercise', verifyToken, async (req, res) => {
 
 /**
  * POST /api/ai/analyze
- * Analyze user's typing patterns
+ * Analyze typing patterns and provide insights
  */
 router.post('/analyze', verifyToken, async (req, res) => {
   try {
     const { scores } = req.body;
 
-    if (!Array.isArray(scores)) {
+    if (!Array.isArray(scores) || scores.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Scores must be an array'
+        message: 'Invalid scores data'
       });
     }
 
-    const analysis = llm.analyzeTypingPatterns(scores);
+    const analysis = typingAI.analyzeTypingPatterns(scores);
 
     res.json({
       success: true,
-      analysis: analysis.analysis
+      data: analysis
     });
   } catch (error) {
     logger.error('Analysis error:', error);
@@ -95,54 +147,20 @@ router.post('/analyze', verifyToken, async (req, res) => {
 });
 
 /**
- * GET /api/ai/recommendations
- * Get personalized AI recommendations
+ * GET /api/ai/health
+ * Check AI service health
  */
-router.get('/recommendations', verifyToken, async (req, res) => {
-  try {
-    const recommendations = await aiService.getRecommendations(req.user.id);
-
-    res.json({
-      success: true,
-      recommendations
-    });
-  } catch (error) {
-    logger.error('Recommendations error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get recommendations'
-    });
-  }
-});
-
-/**
- * POST /api/ai/chat
- * Chat with AI for typing help
- */
-router.post('/chat', verifyToken, async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    if (!message) {
-      return res.status(400).json({
-        success: false,
-        message: 'Message is required'
-      });
-    }
-
-    const response = await aiService.chat(message, req.user.id);
-
-    res.json({
-      success: true,
-      response
-    });
-  } catch (error) {
-    logger.error('Chat error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process chat'
-    });
-  }
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'AI service is running',
+    features: [
+      'Personalized feedback generation',
+      'Exercise generation',
+      'Pattern analysis',
+      'Recommendations'
+    ]
+  });
 });
 
 module.exports = router;
